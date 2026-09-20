@@ -1,1 +1,202 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <!-- スマホ・タブレットでも見られるようにビューポートを指定 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>パケット・トラフィック・ラボ｜情報Ⅰ 通信シミュレーター</title>
+  <!-- 外部フレームワークは使わず、自前の style.css だけを読み込む -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
 
+  <!-- ======================================================
+       ヘッダー：アプリ名と一言説明
+       ====================================================== -->
+  <header class="app-header">
+    <div class="app-header__title">
+      <span class="app-header__badge">情報Ⅰ</span>
+      <h1>パケット・トラフィック・ラボ</h1>
+    </div>
+    <p class="app-header__lead">
+      画像はバラバラの「パケット」になって回線を走る。混み具合を変えて、TCP と UDP の走り方のちがいを見てみよう。
+    </p>
+  </header>
+
+  <!-- ======================================================
+       メイン：左（操作）／中央（回線アニメ）／右（結果）の3カラム
+       ====================================================== -->
+  <main class="layout">
+
+    <!-- ========== 左：コントロールパネル ========== -->
+    <section class="panel panel--control">
+      <h2 class="panel__title">そうさパネル</h2>
+
+      <!-- --- プロトコル切り替えスイッチ --- -->
+      <div class="field">
+        <span class="field__label">通信のルール（プロトコル）</span>
+        <div class="protocol-switch" id="protocolSwitch" role="group" aria-label="プロトコルの選択">
+          <!-- data-protocol の値を JS 側で読み取って動作を切り替える -->
+          <button type="button" class="protocol-switch__btn is-active" data-protocol="tcp" aria-pressed="true">
+            <span class="protocol-switch__name">TCP</span>
+            <span class="protocol-switch__sub">確実性重視・熱血</span>
+          </button>
+          <button type="button" class="protocol-switch__btn" data-protocol="udp" aria-pressed="false">
+            <span class="protocol-switch__name">UDP</span>
+            <span class="protocol-switch__sub">スピード重視・スピード狂</span>
+          </button>
+        </div>
+        <!-- 選んだプロトコルの説明文。JS で中身を書き換える -->
+        <p class="protocol-note" id="protocolNote"></p>
+      </div>
+
+      <!-- --- スライダー①：利用者の多さ（トラフィック量） --- -->
+      <div class="field">
+        <label class="field__label" for="trafficSlider">
+          利用者の多さ（トラフィック量）
+          <span class="field__value" id="trafficValue">ふつう</span>
+        </label>
+        <input type="range" id="trafficSlider" class="slider slider--traffic"
+               min="0" max="100" value="50" step="1">
+        <div class="slider__scale"><span>少ない</span><span>多い</span></div>
+      </div>
+
+      <!-- --- スライダー②：回線の太さ（帯域幅） --- -->
+      <div class="field">
+        <label class="field__label" for="bandwidthSlider">
+          回線の太さ（帯域幅）
+          <span class="field__value" id="bandwidthValue">ふつう</span>
+        </label>
+        <input type="range" id="bandwidthSlider" class="slider slider--bandwidth"
+               min="0" max="100" value="50" step="1">
+        <div class="slider__scale"><span>せまい</span><span>広い</span></div>
+      </div>
+
+      <!-- --- 今の回線コンディション表示 --- -->
+      <div class="condition" id="condition">
+        <span class="condition__label">回線のようす</span>
+        <strong class="condition__text" id="conditionText">すいている</strong>
+      </div>
+
+      <!-- --- 実行ボタン --- -->
+      <div class="actions">
+        <button type="button" class="btn btn--send" id="sendBtn">画像を送信</button>
+        <button type="button" class="btn btn--reset" id="resetBtn">リセット</button>
+      </div>
+
+      <!-- --- これから送る画像（元データ）のプレビュー --- -->
+      <div class="source-preview">
+        <span class="field__label">送る画像（10×10ドット＝100パケット）</span>
+        <div class="pixel-grid pixel-grid--small" id="sourceGrid" aria-label="送信する元画像"></div>
+      </div>
+    </section>
+
+    <!-- ========== 中央：アニメーションエリア ========== -->
+    <section class="panel panel--stage">
+      <h2 class="panel__title">回線のようす</h2>
+
+      <div class="stage">
+        <!-- 送信元：スマホ -->
+        <div class="endpoint endpoint--sender">
+          <div class="device device--phone" id="phoneDevice">
+            <div class="device__screen"></div>
+          </div>
+          <span class="endpoint__caption">送信元<br>スマホ</span>
+        </div>
+
+        <!-- 回線（道路）。パケットはこの中に JS が並べる -->
+        <div class="road" id="road">
+          <div class="road__line" aria-hidden="true"></div>
+          <div class="road__label" aria-hidden="true">1本の回線をみんなでシェア中</div>
+          <!-- ここに .packet / .traffic-block / .nack などが動的に追加される -->
+        </div>
+
+        <!-- 受信先：サーバー -->
+        <div class="endpoint endpoint--receiver">
+          <div class="device device--server" id="serverDevice">
+            <span class="device__led"></span>
+            <span class="device__led"></span>
+            <span class="device__led"></span>
+          </div>
+          <span class="endpoint__caption">受信先<br>サーバー</span>
+        </div>
+      </div>
+
+      <!-- 凡例 -->
+      <ul class="legend">
+        <li><span class="legend__chip legend__chip--mine"></span>自分のパケット</li>
+        <li><span class="legend__chip legend__chip--other"></span>他の人の通信</li>
+        <li><span class="legend__chip legend__chip--lost"></span>衝突＝パケットロス</li>
+        <li><span class="legend__chip legend__chip--nack"></span>再送リクエスト（TCPのみ）</li>
+      </ul>
+
+      <!-- 実況ログ（最新のできごとを数行だけ表示） -->
+      <div class="log" id="log" aria-live="polite"></div>
+    </section>
+
+    <!-- ========== 右：結果＆ステータスエリア ========== -->
+    <section class="panel panel--result">
+      <h2 class="panel__title">受信した画像</h2>
+
+      <!-- 届いたパケットから組み立てられる画像 -->
+      <div class="pixel-grid pixel-grid--large" id="resultGrid" aria-label="受信して復元された画像"></div>
+
+      <!-- 復元の進み具合 -->
+      <div class="progress">
+        <div class="progress__head">
+          <span>復元できた割合</span>
+          <strong id="progressValue">0%</strong>
+        </div>
+        <div class="progress__bar"><div class="progress__fill" id="progressFill"></div></div>
+      </div>
+
+      <h2 class="panel__title panel__title--sub">通信品質の3大指標</h2>
+
+      <!-- メーター①：スループット -->
+      <div class="meter">
+        <div class="meter__head">
+          <span class="meter__name">スループット<small>実際に届く速さ</small></span>
+          <strong class="meter__value" id="throughputValue">0.0 Mbps</strong>
+        </div>
+        <div class="meter__bar"><div class="meter__fill meter__fill--throughput" id="throughputFill"></div></div>
+      </div>
+
+      <!-- メーター②：遅延 -->
+      <div class="meter">
+        <div class="meter__head">
+          <span class="meter__name">遅延<small>届くまでの待ち時間</small></span>
+          <strong class="meter__value" id="latencyValue">0 ms</strong>
+        </div>
+        <div class="meter__bar"><div class="meter__fill meter__fill--latency" id="latencyFill"></div></div>
+      </div>
+
+      <!-- メーター③：パケットロス率 -->
+      <div class="meter">
+        <div class="meter__head">
+          <span class="meter__name">パケットロス率<small>消えた割合</small></span>
+          <strong class="meter__value" id="lossValue">0.0 %</strong>
+        </div>
+        <div class="meter__bar"><div class="meter__fill meter__fill--loss" id="lossFill"></div></div>
+      </div>
+
+      <!-- 細かい数値 -->
+      <dl class="stats">
+        <div class="stats__item"><dt>送ったパケット</dt><dd id="statSent">0</dd></div>
+        <div class="stats__item"><dt>消えたパケット</dt><dd id="statLost">0</dd></div>
+        <div class="stats__item"><dt>再送した回数</dt><dd id="statRetrans">0</dd></div>
+        <div class="stats__item"><dt>かかった時間</dt><dd id="statTime">0.0 秒</dd></div>
+      </dl>
+
+      <!-- 送信完了後のまとめメッセージ -->
+      <p class="verdict" id="verdict">「画像を送信」を押すとシミュレーションが始まります。</p>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <p>パケット・トラフィック・ラボ／高校「情報Ⅰ」ネットワーク単元 体験用シミュレーター</p>
+  </footer>
+
+  <!-- JavaScript は body の最後で読み込む（DOM が出来てから動かすため） -->
+  <script src="script.js"></script>
+</body>
+</html>

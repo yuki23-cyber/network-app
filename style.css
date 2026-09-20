@@ -1,1 +1,574 @@
+@charset "utf-8";
 
+/* =========================================================
+   パケット・トラフィック・ラボ／スタイルシート
+   - 外部CSSフレームワークは一切使用していません
+   - 配色や角丸などは :root のカスタムプロパティで一括管理
+   ========================================================= */
+
+/* ---------- 1. 変数（色・角丸・影）の定義 ---------- */
+:root {
+  --ink:        #17213d;   /* 文字色（濃紺） */
+  --ink-soft:   #5a6485;   /* うすい文字色 */
+  --paper:      #eaf0ff;   /* ページ背景（淡いブルー） */
+  --card:       #ffffff;   /* カード背景 */
+  --asphalt:    #222a4c;   /* 回線＝道路の色 */
+  --asphalt-2:  #2c3661;   /* 道路の明るい部分 */
+  --tcp:        #ff5d73;   /* TCPのテーマカラー（熱血レッド） */
+  --udp:        #14c2e8;   /* UDPのテーマカラー（スピードシアン） */
+  --lime:       #b8f24d;   /* 成功・センターライン */
+  --amber:      #ffc93c;   /* 注意 */
+  --grey-car:   #79829f;   /* 他人の通信ブロック */
+  --radius-l:   22px;
+  --radius-m:   14px;
+  --radius-s:   8px;
+  --shadow:     0 10px 24px rgba(23, 33, 61, 0.10);
+  --shadow-btn: 0 5px 0 rgba(23, 33, 61, 0.20);
+}
+
+/* ---------- 2. ベース設定 ---------- */
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  /* 丸みのある日本語フォントを優先して、やわらかい印象にする */
+  font-family: "Hiragino Maru Gothic ProN", "ヒラギノ丸ゴ ProN",
+               "Zen Maru Gothic", "M PLUS Rounded 1c",
+               "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo",
+               system-ui, sans-serif;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 12% 0%, #ffffff 0%, rgba(255,255,255,0) 45%),
+    var(--paper);
+  min-height: 100vh;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2 { margin: 0; line-height: 1.35; }
+
+/* ---------- 3. ヘッダー ---------- */
+.app-header {
+  padding: 26px 26px 18px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.app-header__title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.app-header__badge {
+  background: var(--ink);
+  color: var(--lime);
+  font-size: 0.8rem;
+  padding: 4px 12px;
+  border-radius: 999px;
+  letter-spacing: 0.08em;
+}
+
+.app-header h1 {
+  font-size: clamp(1.5rem, 3.2vw, 2.2rem);
+  letter-spacing: 0.02em;
+}
+
+.app-header__lead {
+  margin: 8px 0 0;
+  color: var(--ink-soft);
+  max-width: 62ch;
+  font-size: 0.95rem;
+}
+
+/* ---------- 4. 3カラムレイアウト ---------- */
+.layout {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 26px 26px;
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr) 320px;
+  gap: 18px;
+  align-items: start;
+}
+
+.panel {
+  background: var(--card);
+  border-radius: var(--radius-l);
+  box-shadow: var(--shadow);
+  padding: 20px;
+}
+
+.panel__title {
+  font-size: 1.05rem;
+  margin-bottom: 14px;
+  padding-left: 12px;
+  border-left: 6px solid var(--lime);
+}
+
+.panel__title--sub { margin-top: 22px; }
+
+/* ---------- 5. 左：コントロールパネル ---------- */
+.field { margin-bottom: 20px; }
+
+.field__label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--ink-soft);
+  margin-bottom: 8px;
+}
+
+.field__value {
+  color: var(--ink);
+  background: var(--paper);
+  border-radius: 999px;
+  padding: 1px 10px;
+  font-size: 0.8rem;
+}
+
+/* --- プロトコル切り替えスイッチ --- */
+.protocol-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.protocol-switch__btn {
+  font-family: inherit;
+  cursor: pointer;
+  border: 2px solid #dbe2f6;
+  background: #f7f9ff;
+  color: var(--ink-soft);
+  border-radius: var(--radius-m);
+  padding: 10px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  transition: transform .12s ease, border-color .12s ease, background .12s ease;
+}
+
+.protocol-switch__btn:hover { transform: translateY(-2px); }
+
+.protocol-switch__name { font-size: 1.25rem; font-weight: 800; letter-spacing: 0.04em; }
+.protocol-switch__sub  { font-size: 0.68rem; line-height: 1.3; text-align: center; }
+
+/* 選択中のボタン（TCP は赤、UDP はシアン） */
+.protocol-switch__btn[data-protocol="tcp"].is-active {
+  background: var(--tcp); border-color: var(--tcp); color: #fff;
+}
+.protocol-switch__btn[data-protocol="udp"].is-active {
+  background: var(--udp); border-color: var(--udp); color: #fff;
+}
+
+.protocol-note {
+  margin: 10px 0 0;
+  font-size: 0.8rem;
+  background: var(--paper);
+  border-radius: var(--radius-m);
+  padding: 10px 12px;
+  color: var(--ink);
+}
+
+/* --- スライダー --- */
+.slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  background: #dfe6fa;
+  outline: none;
+  margin: 0;
+}
+
+/* つまみ（Chrome / Safari） */
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  background: var(--ink);
+  border: 4px solid #fff;
+  box-shadow: 0 2px 6px rgba(23,33,61,.35);
+  cursor: pointer;
+}
+/* つまみ（Firefox） */
+.slider::-moz-range-thumb {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: var(--ink);
+  border: 4px solid #fff;
+  cursor: pointer;
+}
+
+.slider--traffic    { background: linear-gradient(90deg, #dfe6fa, var(--amber)); }
+.slider--bandwidth  { background: linear-gradient(90deg, #dfe6fa, var(--lime)); }
+
+.slider__scale {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+  margin-top: 4px;
+}
+
+/* --- 回線コンディション表示 --- */
+.condition {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--paper);
+  border-radius: var(--radius-m);
+  padding: 10px 14px;
+  margin-bottom: 16px;
+}
+.condition__label { font-size: 0.8rem; color: var(--ink-soft); }
+.condition__text  { font-size: 0.95rem; }
+
+/* 混雑度に応じて色を変える（JS が class を付け替える） */
+.condition.is-smooth  { background: #e8fbd9; }
+.condition.is-busy    { background: #fff3d1; }
+.condition.is-jam     { background: #ffe0e5; }
+
+/* --- ボタン --- */
+.actions { display: grid; grid-template-columns: 1fr auto; gap: 10px; }
+
+.btn {
+  font-family: inherit;
+  font-weight: 800;
+  font-size: 0.95rem;
+  border: none;
+  border-radius: var(--radius-m);
+  padding: 12px 16px;
+  cursor: pointer;
+  color: #fff;
+  box-shadow: var(--shadow-btn);
+  transition: transform .1s ease, box-shadow .1s ease, filter .1s ease;
+}
+.btn:hover   { filter: brightness(1.06); }
+.btn:active  { transform: translateY(4px); box-shadow: 0 1px 0 rgba(23,33,61,.2); }
+.btn:disabled{ opacity: .45; cursor: not-allowed; transform: none; }
+
+.btn--send  { background: var(--ink); }
+.btn--reset { background: #96a0c0; }
+
+/* --- 元画像プレビュー --- */
+.source-preview { margin-top: 20px; }
+
+/* ---------- 6. ドット絵グリッド（元画像・受信画像 共通） ---------- */
+.pixel-grid {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr); /* 10×10 ドット */
+  gap: 1px;
+  background: #cdd6ee;
+  border-radius: var(--radius-s);
+  padding: 1px;
+  width: fit-content;
+}
+
+.pixel-grid--small { width: 130px; }
+.pixel-grid--large { width: 100%; max-width: 280px; margin: 0 auto 14px; }
+
+.pixel-grid--small .pixel { width: 100%; aspect-ratio: 1; }
+.pixel-grid--large .pixel { width: 100%; aspect-ratio: 1; }
+
+.pixel {
+  background: #f0f3fb;          /* 未受信のマス */
+  border-radius: 2px;
+  transition: background-color .18s ease, transform .18s ease;
+}
+
+/* 受信した瞬間にポンッと跳ねる演出 */
+.pixel.is-arrived { animation: pixelPop .28s ease; }
+@keyframes pixelPop {
+  0%   { transform: scale(0.4); }
+  60%  { transform: scale(1.18); }
+  100% { transform: scale(1); }
+}
+
+/* UDP で届かなかったマス＝砂嵐（JS が色を細かく変える） */
+.pixel.is-noise { border-radius: 0; }
+
+/* ---------- 7. 中央：ステージ（回線アニメ） ---------- */
+.stage {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr) 72px;
+  gap: 10px;
+  align-items: center;
+}
+
+.endpoint { text-align: center; }
+.endpoint__caption {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+  margin-top: 6px;
+  line-height: 1.3;
+}
+
+/* --- スマホの絵（CSSだけで描画） --- */
+.device--phone {
+  width: 42px; height: 68px;
+  margin: 0 auto;
+  background: var(--ink);
+  border-radius: 10px;
+  padding: 6px 4px;
+  position: relative;
+}
+.device--phone .device__screen {
+  width: 100%; height: 100%;
+  border-radius: 5px;
+  background: linear-gradient(140deg, var(--udp), var(--lime));
+}
+/* 送信中はスマホがふるえる */
+.device--phone.is-sending { animation: shake .35s linear infinite; }
+@keyframes shake {
+  0%, 100% { transform: translate(0, 0); }
+  25%      { transform: translate(-1.5px, 1px) rotate(-1.5deg); }
+  75%      { transform: translate(1.5px, -1px) rotate(1.5deg); }
+}
+
+/* --- サーバーの絵（CSSだけで描画） --- */
+.device--server {
+  width: 52px; height: 68px;
+  margin: 0 auto;
+  background: linear-gradient(180deg, #3b4677, var(--ink));
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 7px;
+  padding: 8px;
+}
+.device__led {
+  display: block;
+  height: 8px;
+  border-radius: 3px;
+  background: #5b6796;
+}
+/* パケット到着のたびにランプが光る */
+.device--server.is-receiving .device__led { background: var(--lime); }
+
+/* --- 道路（回線） --- */
+.road {
+  position: relative;
+  height: 230px;
+  background:
+    repeating-linear-gradient(180deg, var(--asphalt) 0 18px, var(--asphalt-2) 18px 20px),
+    var(--asphalt);
+  border-radius: var(--radius-m);
+  overflow: hidden;
+  border: 3px solid var(--ink);
+}
+
+/* 道路の中央線（黄色い破線） */
+.road__line {
+  position: absolute;
+  top: 50%; left: 0; right: 0;
+  height: 4px;
+  transform: translateY(-50%);
+  background: repeating-linear-gradient(90deg, var(--amber) 0 22px, transparent 22px 48px);
+  opacity: .55;
+}
+
+.road__label {
+  position: absolute;
+  left: 10px; bottom: 6px;
+  font-size: 0.68rem;
+  color: rgba(255,255,255,.45);
+}
+
+/* --- 走るブロックたち（JS が left / top を毎フレーム更新） --- */
+.packet, .traffic-block, .nack, .boom {
+  position: absolute;
+  will-change: transform;
+}
+
+/* 自分のパケット（カラフル） */
+.packet {
+  width: 15px; height: 15px;
+  border-radius: 4px;
+  border: 2px solid rgba(255,255,255,.85);
+  box-shadow: 0 0 10px rgba(255,255,255,.35);
+}
+
+/* 再送されたパケットは点滅して目立たせる */
+.packet.is-retransmitted { animation: blink .5s ease-in-out infinite; }
+@keyframes blink { 50% { opacity: .35; } }
+
+/* 他人の通信（グレー） */
+.traffic-block {
+  width: 20px; height: 12px;
+  border-radius: 3px;
+  background: var(--grey-car);
+  opacity: .85;
+}
+
+/* 再送リクエスト（右から左へ戻る矢印） */
+.nack {
+  width: 0; height: 0;
+  border-top: 7px solid transparent;
+  border-bottom: 7px solid transparent;
+  border-right: 14px solid var(--tcp);
+  filter: drop-shadow(0 0 6px rgba(255,93,115,.9));
+}
+
+/* 衝突エフェクト */
+.boom {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff 0%, var(--amber) 35%, rgba(255,93,115,.1) 70%);
+  animation: boom .45s ease-out forwards;
+}
+@keyframes boom {
+  0%   { transform: scale(.3); opacity: 1; }
+  100% { transform: scale(1.7); opacity: 0; }
+}
+
+/* --- 凡例 --- */
+.legend {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  padding: 0;
+  margin: 12px 0 0;
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+}
+.legend li { display: flex; align-items: center; gap: 6px; }
+.legend__chip { width: 14px; height: 14px; border-radius: 4px; display: inline-block; }
+.legend__chip--mine  { background: linear-gradient(135deg, #ffb84d, #ff5f9e); }
+.legend__chip--other { background: var(--grey-car); }
+.legend__chip--lost  { background: var(--amber); border-radius: 50%; }
+.legend__chip--nack  {
+  width: 0; height: 0; border-radius: 0;
+  border-top: 7px solid transparent;
+  border-bottom: 7px solid transparent;
+  border-right: 12px solid var(--tcp);
+}
+
+/* --- 実況ログ --- */
+.log {
+  margin-top: 12px;
+  background: #f7f9ff;
+  border-radius: var(--radius-m);
+  padding: 10px 14px;
+  height: 108px;
+  overflow: hidden;
+  font-size: 0.82rem;
+}
+.log__row { margin: 0 0 3px; color: var(--ink-soft); }
+.log__row:first-child { color: var(--ink); font-weight: 700; }
+.log__row--tcp  { color: var(--tcp); }
+.log__row--udp  { color: #0a94b3; }
+
+/* ---------- 8. 右：結果＆メーター ---------- */
+.progress__head, .meter__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.82rem;
+  margin-bottom: 5px;
+}
+
+.progress__bar, .meter__bar {
+  height: 12px;
+  background: #e6ebfa;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progress__fill, .meter__fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  transition: width .25s ease;
+}
+
+.progress__fill              { background: linear-gradient(90deg, var(--lime), #4fd07a); }
+.meter__fill--throughput     { background: linear-gradient(90deg, #7cd6ff, var(--udp)); }
+.meter__fill--latency        { background: linear-gradient(90deg, var(--amber), #ff8a3d); }
+.meter__fill--loss           { background: linear-gradient(90deg, #ff9fb0, var(--tcp)); }
+
+.meter { margin-bottom: 14px; }
+.meter__name { display: flex; flex-direction: column; font-weight: 700; }
+.meter__name small { font-weight: 400; font-size: 0.68rem; color: var(--ink-soft); }
+.meter__value { font-variant-numeric: tabular-nums; }
+
+/* --- 数値の一覧 --- */
+.stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 18px 0 0;
+}
+.stats__item {
+  background: var(--paper);
+  border-radius: var(--radius-m);
+  padding: 8px 10px;
+}
+.stats__item dt { font-size: 0.7rem; color: var(--ink-soft); }
+.stats__item dd {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- まとめメッセージ --- */
+.verdict {
+  margin: 16px 0 0;
+  padding: 12px 14px;
+  border-radius: var(--radius-m);
+  background: #f7f9ff;
+  font-size: 0.85rem;
+  border-left: 6px solid #cdd6ee;
+}
+.verdict.is-tcp { background: #fff0f2; border-left-color: var(--tcp); }
+.verdict.is-udp { background: #e6f9ff; border-left-color: var(--udp); }
+
+/* ---------- 9. フッター ---------- */
+.app-footer {
+  text-align: center;
+  padding: 10px 26px 30px;
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+}
+
+/* ---------- 10. レスポンシブ（タブレット・スマホ） ---------- */
+@media (max-width: 1080px) {
+  .layout { grid-template-columns: 1fr 1fr; }
+  .panel--stage { grid-column: 1 / -1; order: -1; } /* 狭い画面ではアニメを一番上に */
+}
+
+@media (max-width: 720px) {
+  .layout { grid-template-columns: 1fr; padding: 0 14px 20px; }
+  .app-header { padding: 18px 14px 12px; }
+  .road { height: 190px; }
+  .stage { grid-template-columns: 56px minmax(0, 1fr) 56px; }
+}
+
+/* ---------- 11. アクセシビリティ ---------- */
+/* キーボード操作時のフォーカスを分かりやすく */
+:focus-visible {
+  outline: 3px solid var(--udp);
+  outline-offset: 2px;
+}
+
+/* 「視差効果を減らす」設定の人には装飾アニメを止める */
+@media (prefers-reduced-motion: reduce) {
+  .device--phone.is-sending,
+  .packet.is-retransmitted { animation: none; }
+  * { transition-duration: .01ms !important; }
+}
